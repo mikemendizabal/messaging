@@ -2,6 +2,7 @@ import {
   Alert,
   BackHandler,
   Image,
+  Keyboard,
   StyleSheet,
   TouchableHighlight,
   View,
@@ -14,6 +15,11 @@ import {
   createLocationMessage,
   createTextMessage
 } from './utils/MessageUtils';
+import KeyboardState from './components/KeyboardState';
+import MeasureLayout from './components/MeasureLayout';
+import MessagingContainer, {
+  INPUT_METHOD,
+} from './components/MessagingContainer';
 import Status from './components/Status';
 import Toolbar from './components/Toolbar';
 import ImageGrid from './components/ImageGrid';
@@ -30,7 +36,8 @@ export default class App extends React.Component {
       }),
     ],
     fullscreenImageId: null,
-    isInputFocused: false,
+    isInputFocused: true,
+    inputMethod: INPUT_METHOD.NONE,
   };
 
   componentDidMount() {
@@ -57,13 +64,20 @@ export default class App extends React.Component {
     this.setState({ fullscreenImageId: null });
   };
 
+  handleChangeInputMethod = inputMethod => {
+    this.setState({ inputMethod });
+  };
+
   handlePressToolbarCamera = () => {
+    Keyboard.dismiss();
     this.setState({
       isInputFocused: false,
+      inputMethod: INPUT_METHOD.CUSTOM,
     });
   };
 
   handlePressToolbarLocation = async () => {
+    Keyboard.dismiss();
     const { messages } = this.state;
     let { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
@@ -92,10 +106,13 @@ export default class App extends React.Component {
   };
 
   handleChangeFocus = isFocused => {
-    this.setState({ isInputFocused: isFocused });
+    this.setState({
+      inputMethod: isFocused ? INPUT_METHOD.KEYBOARD : INPUT_METHOD.CUSTOM,
+    });
   };
 
   handlePressMessage = ({ id, type }) => {
+    Keyboard.dismiss();
     switch (type) {
       case 'text':
         Alert.alert(
@@ -164,7 +181,7 @@ export default class App extends React.Component {
   renderInputMethodEditor = () => {
     return (
       <View style={styles.inputMethodEditor}>
-        <ImageGrid />
+        <ImageGrid onPressImage={this.handlePressImage} />
       </View>
     );
   }
@@ -191,12 +208,28 @@ export default class App extends React.Component {
   };
 
   render() {
+    const { inputMethod } = this.state;
+
     return (
       <View style={styles.container}>
         <Status />
-        {this.renderMessageList()}
-        {this.renderToolbar()}
-        {this.renderInputMethodEditor()}
+        <MeasureLayout>
+          {layout => (
+            <KeyboardState layout={layout}>
+              {keyboardInfo => (
+                <MessagingContainer
+                  {...keyboardInfo}
+                  inputMethod={inputMethod}
+                  onChangeInputMethod={this.handleChangeInputMethod}
+                  renderInputMethodEditor={this.renderInputMethodEditor}
+                >
+                  {this.renderMessageList()}
+                  {this.renderToolbar()}
+                </MessagingContainer>
+              )}
+            </KeyboardState>
+          )}
+        </MeasureLayout>
         {this.renderFullscreenImage()}
       </View>
     );

@@ -25,8 +25,8 @@ export default class ImageGrid extends React.Component {
   getPhotos() {
     var photos = [];
     while (photos.push({
-      uri: 'https://picsum.photos/600/600?image=' + (photos.length + 1) * 10
-    }) < 108);
+      uri: 'https://picsum.photos/600/600?image=' + photos.length
+    }) <= 1088);
     return photos;
   }
 
